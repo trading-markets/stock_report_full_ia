@@ -1,19 +1,18 @@
-name: Bourse Auto Report
+name: Stock Report IA (Auto)
 
 on:
   schedule:
-    # 09:15 UTC
-    - cron: '15 9 * * *'
-    # 15:15 UTC
-    - cron: '15 15 * * *'
-  workflow_dispatch:  
+    # ⚠️ Heures en UTC (à ajuster selon ton fuseau)
+    - cron: '15 9 * * *'    # 09:15 UTC
+    - cron: '15 15 * * *'   # 15:15 UTC
+  workflow_dispatch:
 
 jobs:
-  run-report:
+  run-stock-report:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -24,15 +23,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install yfinance requests python-dotenv
+          pip install yfinance openai requests
 
-      - name: Run report script
+      - name: Run stock report script
         env:
-          CLAUDE_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SMTP_HOST: ${{ secrets.SMTP_SERVER }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SENDER_EMAIL }}
-          SMTP_PASS: ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_TO:  ${{ secrets.RECIPIENT_EMAIL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: |
-          python report.py --send
+          python stock_report_full_ia_v2.py --send
