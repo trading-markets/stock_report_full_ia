@@ -9,6 +9,16 @@ from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+# ==========================================
+# CONFIGURATION (Utilisez des variables d'env)
+# ==========================================
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "votre@email.com")
+RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL", "destinataire@email.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "") # Mot de passe d'application
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+
 def call_openai(prompt, system=None, model='gpt-4.1-mini'):
     if not OPENAI_API_KEY:
         return None
