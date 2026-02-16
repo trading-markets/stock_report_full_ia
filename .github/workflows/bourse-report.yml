@@ -3,8 +3,8 @@ name: Stock Report IA (Auto)
 on:
   schedule:
     # ⚠️ Heures en UTC (à ajuster selon ton fuseau)
-    - cron: '15 9 * * *'    # 09:15 UTC
-    - cron: '15 15 * * *'   # 15:15 UTC
+    - cron: '15 8 * * *'    # 09:15 UTC +1
+    - cron: '15 14 * * *'   # 15:15 UTC+1
   workflow_dispatch:
 
 jobs:
