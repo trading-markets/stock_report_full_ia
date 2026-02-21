@@ -1,35 +1,147 @@
-name: Stock Report IA (Auto)
+name: 📊 Stock Report IA (Automated)
 
 on:
   schedule:
-    # ⚠️ Heures en UTC (à ajuster selon ton fuseau)
-    - cron: '15 8 * * 1-5'     # 09:15 UTC du lundi au vendredi
-    - cron: '15 14 * * 1-5'    # 15:15 UTC du lundi au vendredi
+    # ⚠️ Heures en UTC - Ajustées pour les marchés européens et US
+    # Ouverture marchés EU (9h30 Paris = 8h30 UTC)
+    - cron: '30 8 * * 1-5'     # 09:30 Paris - Ouverture marchés européens
+    # Mi-journée EU / Pré-ouverture US (14h00 Paris = 13h00 UTC)
+    - cron: '0 13 * * 1-5'     # 14:00 Paris - Avant ouverture US
+    # Après clôture EU / Mi-journée US (18h00 Paris = 17h00 UTC)
+    - cron: '0 15 * * 1-5'     # 18:00 Paris - Synthèse de journée
+  
+  # Exécution manuelle via l'interface GitHub
   workflow_dispatch:
+    inputs:
+      send_email:
+        description: 'Envoyer le rapport par email'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      custom_output:
+        description: 'Nom personnalisé du fichier (optionnel)'
+        required: false
+        default: ''
+
+# Permissions pour les artifacts et pages
+permissions:
+  contents: write
+  actions: read
 
 jobs:
-  run-stock-report:
+  generate-stock-report:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout repo
+      # ==========================================
+      # 1. PRÉPARATION DE L'ENVIRONNEMENT
+      # ==========================================
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Setup Python
+      - name: 🐍 Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
-      - name: Install dependencies
+      - name: 📦 Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install yfinance openai requests
+          pip install yfinance openai requests python-dateutil
 
-      - name: Run stock report script
+      # ==========================================
+      # 2. GÉNÉRATION DU RAPPORT
+      # ==========================================
+      - name: 🚀 Generate AI Stock Report
+        id: generate_report
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: |
-          python stock_report_full_ia_v2.py --send
+          # Déterminer si on envoie l'email
+          SEND_FLAG=""
+          if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ inputs.send_email }}" == "true" ]]; then
+            SEND_FLAG="--send"
+          fi
+          
+          # Déterminer le nom du fichier
+          if [[ -n "${{ inputs.custom_output }}" ]]; then
+            OUTPUT_FILE="${{ inputs.custom_output }}"
+          else
+            OUTPUT_FILE="rapport_boursier_$(date +%Y%m%d_%H%M).html"
+          fi
+          
+          # Exécuter le script
+          python financial_report_final.py --output "$OUTPUT_FILE" $SEND_FLAG
+          
+          # Sauvegarder le nom du fichier pour les étapes suivantes
+          echo "report_file=$OUTPUT_FILE" >> $GITHUB_OUTPUT
+          echo "report_date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          echo "report_time=$(date +%H:%M)" >> $GITHUB_OUTPUT
+
+      # ==========================================
+      # 3. SAUVEGARDE DES ARTIFACTS
+      # ==========================================
+      - name: 📤 Upload report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stock-report-${{ steps.generate_report.outputs.report_date }}
+          path: ${{ steps.generate_report.outputs.report_file }}
+          retention-days: 30
+
+      # ==========================================
+      # 4. ARCHIVAGE DANS LE REPO (optionnel)
+      # ==========================================
+      - name: 📁 Archive report in repository
+        if: github.event_name == 'schedule'
+        run: |
+          # Créer le dossier d'archives s'il n'existe pas
+          mkdir -p reports/$(date +%Y)/$(date +%m)
+          
+          # Copier le rapport dans l'archive
+          cp ${{ steps.generate_report.outputs.report_file }} \
+             reports/$(date +%Y)/$(date +%m)/${{ steps.generate_report.outputs.report_file }}
+          
+          # Garder seulement les 10 derniers rapports (nettoyer les anciens)
+          cd reports/$(date +%Y)/$(date +%m)
+          ls -t *.html | tail -n +11 | xargs -r rm --
+
+      - name: 💾 Commit and push archived report
+        if: github.event_name == 'schedule'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions Bot"
+          git add reports/
+          git diff --quiet && git diff --staged --quiet || \
+            (git commit -m "📊 Auto-archive: Rapport boursier du $(date +%Y-%m-%d) à $(date +%H:%M)" && git push)
+
+      # ==========================================
+      # 5. NOTIFICATION DE SUCCÈS
+      # ==========================================
+      - name: ✅ Report generation summary
+        if: success()
+        run: |
+          echo "::notice::✅ Rapport généré avec succès!"
+          echo "::notice::📄 Fichier: ${{ steps.generate_report.outputs.report_file }}"
+          echo "::notice::📅 Date: ${{ steps.generate_report.outputs.report_date }} à ${{ steps.generate_report.outputs.report_time }}"
+          if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ inputs.send_email }}" == "true" ]]; then
+            echo "::notice::📧 Email envoyé aux destinataires configurés"
+          fi
+
+      # ==========================================
+      # 6. GESTION DES ERREURS
+      # ==========================================
+      - name: ❌ Report generation failure
+        if: failure()
+        run: |
+          echo "::error::❌ Échec de la génération du rapport"
+          echo "::error::Vérifiez les secrets GitHub et les logs ci-dessus"
+          exit 1
