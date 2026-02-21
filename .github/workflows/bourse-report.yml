@@ -6,9 +6,9 @@ on:
     # Ouverture marchés EU (9h30 Paris = 8h30 UTC)
     - cron: '30 8 * * 1-5'     # 09:30 Paris - Ouverture marchés européens
     # Mi-journée EU / Pré-ouverture US (14h00 Paris = 13h00 UTC)
-    - cron: '0 13 * * 1-5'     # 14:00 Paris - Avant ouverture US
+    - cron: '0 12 * * 1-5'     # 13:00 Paris - Avant ouverture US
     # Après clôture EU / Mi-journée US (18h00 Paris = 17h00 UTC)
-    - cron: '0 17 * * 1-5'     # 18:00 Paris - Synthèse de journée
+    - cron: '0 16 * * 1-5'     # 17:00 Paris - Synthèse de journée
   
   # Exécution manuelle via l'interface GitHub
   workflow_dispatch:
@@ -22,7 +22,7 @@ on:
           - 'true'
           - 'false'
       custom_output:
-        description: 'Nom personnalisé du fichier (optionnel)'
+        description: ' Stocks Report Analysis'
         required: false
         default: ''
 
@@ -48,6 +48,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: 📦 Install Python dependencies
         run: |
