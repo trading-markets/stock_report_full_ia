@@ -5,7 +5,8 @@ import requests
 import smtplib
 import argparse
 import os
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -14,10 +15,24 @@ from email.mime.text import MIMEText
 # ==========================================
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "votre@email.com")
-RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL", "destinataire@email.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "") # Mot de passe d'application
+# Support de plusieurs destinataires séparés par des virgules
+RECIPIENT_EMAILS = os.getenv("RECIPIENT_EMAILS", "destinataire1@email.com,destinataire2@email.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")  # Mot de passe d'application
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
+
+# Configuration du fuseau horaire (modifiable)
+TIMEZONE = "Europe/Paris"  # Changez selon votre localisation
+
+def get_local_time():
+    """Retourne l'heure locale actuelle dans le fuseau configuré."""
+    return datetime.now(ZoneInfo(TIMEZONE))
+
+def format_datetime(dt, format_str='%d/%m/%Y à %H:%M:%S'):
+    """Formate une datetime dans le fuseau horaire local."""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(ZoneInfo(TIMEZONE)).strftime(format_str)
 
 def call_openai(prompt, system=None, model='gpt-4o-mini'):
     """Appel à l'API OpenAI avec gestion d'erreurs."""
@@ -32,7 +47,7 @@ def call_openai(prompt, system=None, model='gpt-4o-mini'):
         resp = client.chat.completions.create(model=model, messages=messages, temperature=0.7)
         return resp.choices[0].message.content
     except Exception as e:
-        print(f"Erreur OpenAI: {e}")
+        print(f"❌ Erreur OpenAI: {e}")
         return None
 
 def get_dynamic_assets_from_ai():
@@ -42,7 +57,8 @@ def get_dynamic_assets_from_ai():
     system_prompt = """Tu es un analyste financier senior spécialisé dans la sélection d'actifs boursiers. 
 Tu as une connaissance approfondie des marchés américains et européens, des secteurs porteurs et des catalyseurs de marché."""
     
-    prompt = f"""Date du jour: {datetime.now().strftime('%d/%m/%Y')}
+    current_time = get_local_time()
+    prompt = f"""Date et heure actuelles: {format_datetime(current_time, '%A %d %B %Y à %H:%M')}
 
 Mission: Sélectionne les 20 actifs les plus stratégiques à surveiller aujourd'hui en tenant compte:
 - Des tendances sectorielles actuelles (IA, semi-conducteurs, énergie, luxe, etc.)
@@ -112,7 +128,7 @@ Retourne UNIQUEMENT le JSON, rien d'autre."""
         }
 
 def get_market_data(assets_list):
-    """Récupère les données de marché avec noms complets."""
+    """Récupère les données de marché avec noms complets et timestamps précis."""
     data = []
     for asset in assets_list:
         ticker = asset['ticker']
@@ -130,13 +146,41 @@ def get_market_data(assets_list):
             prev_close = float(hist['Close'].iloc[-2]) if len(hist) > 1 else current_price
             change_pct = ((current_price - prev_close) / prev_close) * 100 if prev_close != 0 else 0
             
-            # Formatage de l'heure de la dernière donnée
-            last_update = hist.index[-1].strftime('%H:%M')
+            # Formatage détaillé de l'heure de la dernière donnée
+            last_timestamp = hist.index[-1]
+            last_update_full = format_datetime(last_timestamp, '%d/%m/%Y %H:%M:%S')
+            last_update_short = format_datetime(last_timestamp, '%H:%M')
+            
+            # Calcul du délai depuis la dernière mise à jour
+            time_diff = get_local_time() - last_timestamp.replace(tzinfo=timezone.utc).astimezone(ZoneInfo(TIMEZONE))
+            minutes_ago = int(time_diff.total_seconds() / 60)
+            
+            if minutes_ago < 60:
+                time_ago = f"il y a {minutes_ago} min"
+            elif minutes_ago < 1440:  # moins de 24h
+                hours_ago = minutes_ago // 60
+                time_ago = f"il y a {hours_ago}h"
+            else:
+                days_ago = minutes_ago // 1440
+                time_ago = f"il y a {days_ago}j"
             
             # Informations supplémentaires
             info = stock.info
             currency = info.get('currency', 'USD')
             market_cap = info.get('marketCap', 0)
+            
+            # Détermination du statut de marché
+            market_status = "Fermé"
+            if '.PA' in ticker or '.AS' in ticker or '.DE' in ticker or '.MI' in ticker or '.MC' in ticker:
+                # Marchés européens (9h00-17h30 CET)
+                current_hour = get_local_time().hour
+                if 9 <= current_hour < 18:
+                    market_status = "Ouvert"
+            else:
+                # Marchés US (9h30-16h00 EST = 15h30-22h00 CET)
+                current_hour = get_local_time().hour
+                if 15 <= current_hour < 22:
+                    market_status = "Ouvert"
             
             data.append({
                 "symbol": ticker,
@@ -145,7 +189,10 @@ def get_market_data(assets_list):
                 "change_pct": change_pct,
                 "currency": currency,
                 "market_cap": market_cap,
-                "last_update": last_update
+                "last_update_full": last_update_full,
+                "last_update_short": last_update_short,
+                "time_ago": time_ago,
+                "market_status": market_status
             })
         except Exception as e:
             print(f"❌ Erreur pour {ticker} ({name}): {e}")
@@ -159,7 +206,8 @@ def get_market_context():
     system_prompt = """Tu es un analyste macro-économique qui suit l'actualité financière en temps réel.
 Tu identifies les catalyseurs de marché, les événements géopolitiques et les publications économiques importantes."""
     
-    prompt = f"""Date: {datetime.now().strftime('%A %d %B %Y')}
+    current_time = get_local_time()
+    prompt = f"""Date et heure: {format_datetime(current_time, '%A %d %B %Y à %H:%M')}
 
 Analyse le contexte de marché actuel et fournis un JSON structuré:
 
@@ -205,6 +253,7 @@ Actif: {ticker_data['symbol']} - {ticker_data['name']}
 Prix actuel: {ticker_data['price']:.2f} {ticker_data['currency']}
 Variation: {ticker_data['change_pct']:.2f}%
 Cap. boursière: {ticker_data['market_cap']:,} (si disponible)
+Statut: {ticker_data['market_status']} (dernière màj: {ticker_data['time_ago']})
 
 Fournis une analyse JSON:
 {{
@@ -282,9 +331,10 @@ Retourne UNIQUEMENT le JSON."""
             ]
         }
 
-def generate_html(summary, us_data, eu_data, market_context, recommendations):
+def generate_html(summary, us_data, eu_data, market_context, recommendations, generation_time):
     """Génère un rapport HTML avec design moderne et épuré."""
-    now = datetime.now().strftime('%d/%m/%Y à %H:%M')
+    now = format_datetime(generation_time, '%d/%m/%Y à %H:%M:%S')
+    now_short = format_datetime(generation_time, '%d/%m/%Y à %H:%M')
     
     # Calcul des statistiques
     all_data = us_data + eu_data
@@ -346,6 +396,15 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
             opacity: 0.95;
             font-size: 15px;
             font-weight: 300;
+        }
+        .header-timestamp {
+            display: inline-block;
+            background: rgba(255,255,255,0.15);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 10px;
+            font-weight: 500;
         }
         
         .market-banner {
@@ -513,7 +572,7 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
         }
         tbody tr:hover {
             background: #f9fafb;
-            transform: scale(1.01);
+            transform: scale(1.002);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         tbody tr:nth-child(even) {
@@ -545,7 +604,30 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
         .update-time {
             font-size: 10px;
             color: #9ca3af;
-            font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .market-status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 4px;
+        }
+        .status-open {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-closed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .time-ago {
+            color: #6b7280;
+            font-weight: 600;
         }
         
         .price-cell {
@@ -586,9 +668,9 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
             margin-left: 6px;
             text-transform: uppercase;
         }
-        .conf-high { background: #d1fae5; color: #065f46; }
-        .conf-medium { background: #fef3c7; color: #92400e; }
-        .conf-low { background: #fee2e2; color: #991b1b; }
+        .conf-haute { background: #d1fae5; color: #065f46; }
+        .conf-moyenne { background: #fef3c7; color: #92400e; }
+        .conf-faible { background: #fee2e2; color: #991b1b; }
         
         .event-text {
             color: #dc2626;
@@ -625,11 +707,19 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
             color: #374151;
             font-weight: 600;
         }
+        .footer-timestamp {
+            margin-top: 10px;
+            font-size: 10px;
+            color: #6b7280;
+            font-style: italic;
+        }
         
         @media (max-width: 768px) {
             .market-grid { grid-template-columns: 1fr; }
             table { font-size: 11px; }
             th, td { padding: 10px 8px; }
+            .header h1 { font-size: 24px; }
+            .content { padding: 20px; }
         }
     </style>
     """
@@ -658,7 +748,7 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
             
             # Badge de confiance
             conf = item['ai'].get('confidence', 'Moyenne')
-            conf_class = f"conf-{conf.lower()}" if conf in ['Haute', 'Moyenne', 'Faible'] else "conf-medium"
+            conf_class = f"conf-{conf.lower()}" if conf in ['Haute', 'Moyenne', 'Faible'] else "conf-moyenne"
             
             # Événement
             event = ""
@@ -669,13 +759,19 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
             bias = item['ai'].get('short_term_bias', 'Neutre')
             bias_class = f"bias-{bias.lower()}"
             
+            # Statut de marché
+            status_class = "status-open" if item['market_status'] == "Ouvert" else "status-closed"
+            
             html += f"""
             <tr>
                 <td>
                     <div class="asset-info">
                         <span class="ticker">{item['symbol']}</span>
                         <span class="asset-name">{item['name']}</span>
-                        <span class="update-time">Màj: {item['last_update']}</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">{item['time_ago']}</span>
+                            <span class="market-status-badge {status_class}">{item['market_status']}</span>
+                        </div>
                     </div>
                 </td>
                 <td class="price-cell">{item['price']:.2f} {item['currency']}</td>
@@ -717,7 +813,7 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Rapport Boursier IA - {now}</title>
+        <title>Rapport Boursier IA - {now_short}</title>
         {style}
     </head>
     <body>
@@ -725,7 +821,10 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
             <div class="header">
                 <div class="header-content">
                     <h1>📊 Analyse Boursière Prédictive</h1>
-                    <p>Rapport Stratégique Alimenté par Intelligence Artificielle • {now}</p>
+                    <p>Rapport Stratégique Alimenté par Intelligence Artificielle</p>
+                    <div class="header-timestamp">
+                        🗓️ Généré le {now}
+                    </div>
                 </div>
             </div>
             
@@ -811,6 +910,9 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
                 <strong>Données temps réel</strong> via Yahoo Finance • <strong>Analyses générées par IA</strong> (GPT-4o-mini)<br>
                 ⚠️ Ce document est fourni à titre informatif uniquement et ne constitue pas un conseil en investissement.<br>
                 Les performances passées ne préjugent pas des performances futures. Investir comporte des risques.
+                <div class="footer-timestamp">
+                    Rapport généré le {now} • Fuseau horaire: {TIMEZONE}
+                </div>
             </div>
         </div>
     </body>
@@ -818,15 +920,23 @@ def generate_html(summary, us_data, eu_data, market_context, recommendations):
     """
 
 def send_email(html_content):
-    """Envoie le rapport par e-mail."""
+    """Envoie le rapport par e-mail à plusieurs destinataires."""
     if not EMAIL_PASSWORD or SENDER_EMAIL == "votre@email.com":
         print("❌ Configuration e-mail manquante. Définissez les variables d'environnement.")
+        print("   SENDER_EMAIL, RECIPIENT_EMAILS, EMAIL_PASSWORD")
+        return False
+    
+    # Parse des destinataires (séparés par des virgules)
+    recipients = [email.strip() for email in RECIPIENT_EMAILS.split(',') if email.strip()]
+    
+    if not recipients:
+        print("❌ Aucun destinataire configuré dans RECIPIENT_EMAILS")
         return False
     
     msg = MIMEMultipart()
     msg['From'] = SENDER_EMAIL
-    msg['To'] = RECIPIENT_EMAIL
-    msg['Subject'] = f"💎 Rapport Boursier IA - {datetime.now().strftime('%d/%m/%Y')}"
+    msg['To'] = ', '.join(recipients)  # Affichage de tous les destinataires
+    msg['Subject'] = f"💎 Rapport Boursier IA - {format_datetime(get_local_time(), '%d/%m/%Y')}"
     msg.attach(MIMEText(html_content, 'html'))
 
     try:
@@ -841,43 +951,72 @@ def send_email(html_content):
 
 def main():
     """Fonction principale."""
-    parser = argparse.ArgumentParser(description="Générateur de rapport boursier IA avancé")
-    parser.add_argument('--send', action='store_true', help="Envoyer le rapport par e-mail")
-    parser.add_argument('--output', type=str, default="rapport_boursier_ia.html", 
-                       help="Nom du fichier de sortie (défaut: rapport_boursier_ia.html)")
+    parser = argparse.ArgumentParser(
+        description="Générateur de rapport boursier IA avancé",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemples d'utilisation:
+  python financial_report_final.py
+  python financial_report_final.py --send
+  python financial_report_final.py --output rapport_2026-02-15.html --send
+
+Variables d'environnement requises:
+  OPENAI_API_KEY       : Clé API OpenAI
+  SENDER_EMAIL         : Email expéditeur (Gmail)
+  RECIPIENT_EMAILS     : Emails destinataires (séparés par des virgules)
+  EMAIL_PASSWORD       : Mot de passe d'application Gmail
+        """
+    )
+    parser.add_argument('--send', action='store_true', 
+                       help="Envoyer le rapport par e-mail")
+    parser.add_argument('--output', type=str, 
+                       default=f"rapport_boursier_{format_datetime(get_local_time(), '%Y%m%d_%H%M')}.html",
+                       help="Nom du fichier de sortie (défaut: rapport_boursier_YYYYMMDD_HHMM.html)")
     args = parser.parse_args()
 
-    print("=" * 70)
-    print("🚀 DÉMARRAGE DE L'ANALYSE BOURSIÈRE IA")
-    print("=" * 70)
+    generation_time = get_local_time()
+    
+    print("=" * 80)
+    print("🚀 ANALYSE BOURSIÈRE IA - RAPPORT DÉTAILLÉ")
+    print("=" * 80)
+    print(f"📅 Date de génération: {format_datetime(generation_time, '%A %d %B %Y à %H:%M:%S')}")
+    print(f"🌍 Fuseau horaire: {TIMEZONE}")
+    print("=" * 80)
     
     # 1. Récupération du contexte de marché
     market_context = get_market_context()
-    print(f"   └─ Sentiment: {market_context['market_sentiment']} | Risque: {market_context['risk_level']}")
+    print(f"   ├─ Sentiment: {market_context['market_sentiment']}")
+    print(f"   └─ Niveau de risque: {market_context['risk_level']}")
     
     # 2. Sélection dynamique des actifs
     assets = get_dynamic_assets_from_ai()
     total_assets = len(assets['us_actions']) + len(assets['eu_actions']) + len(assets['etfs'])
-    print(f"   └─ {total_assets} actifs sélectionnés")
+    print(f"\n📊 Sélection des actifs")
+    print(f"   ├─ Actions US: {len(assets['us_actions'])}")
+    print(f"   ├─ Actions EU: {len(assets['eu_actions'])}")
+    print(f"   ├─ ETFs: {len(assets['etfs'])}")
+    print(f"   └─ TOTAL: {total_assets} actifs")
     
     # 3. Récupération des données de marché
-    print("\n📊 Récupération des cours en temps réel...")
+    print("\n📈 Récupération des cours en temps réel...")
     us_raw = get_market_data(assets['us_actions'] + assets['etfs'])
     eu_raw = get_market_data(assets['eu_actions'])
-    print(f"   └─ {len(us_raw)} actifs US/ETF récupérés")
+    print(f"   ├─ {len(us_raw)} actifs US/ETF récupérés")
     print(f"   └─ {len(eu_raw)} actifs EU récupérés")
     
     # 4. Analyses IA individuelles
     print("\n🧠 Génération des analyses IA...")
-    for item in us_raw:
+    for i, item in enumerate(us_raw, 1):
         item['ai'] = get_ai_analysis(item, market_context)
-    for item in eu_raw:
+        print(f"   ├─ [{i}/{len(us_raw)}] {item['symbol']}: {item['ai']['recommendation']}")
+    for i, item in enumerate(eu_raw, 1):
         item['ai'] = get_ai_analysis(item, market_context)
-    print(f"   └─ {len(us_raw) + len(eu_raw)} analyses générées")
+        print(f"   ├─ [{i}/{len(eu_raw)}] {item['symbol']}: {item['ai']['recommendation']}")
+    print(f"   └─ {len(us_raw) + len(eu_raw)} analyses complétées")
     
     # 5. Génération des recommandations stratégiques
     recommendations = generate_recommendations(us_raw, eu_raw, market_context)
-    print(f"   └─ {len(recommendations['recommendations'])} recommandations créées")
+    print(f"\n💡 {len(recommendations['recommendations'])} recommandations stratégiques générées")
     
     # 6. Résumé global
     print("\n📝 Rédaction du résumé exécutif...")
@@ -897,28 +1036,36 @@ Ton professionnel et synthétique. Pas de jargon inutile."""
                          system="Tu es un rédacteur financier senior qui synthétise l'information de manière claire et impactante.")
     if not summary:
         summary = "Marchés en évolution avec des opportunités sectorielles. Surveillance recommandée sur les valeurs technologiques et les ETFs diversifiés."
+    print("   └─ Synthèse rédigée")
     
     # 7. Génération du rapport HTML
     print("\n🎨 Génération du rapport HTML...")
-    html = generate_html(summary, us_raw, eu_raw, market_context, recommendations)
+    html = generate_html(summary, us_raw, eu_raw, market_context, recommendations, generation_time)
     
     output_file = args.output
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"✅ Rapport généré : {output_file}")
+    print(f"   └─ ✅ Rapport sauvegardé: {output_file}")
     
     # 8. Envoi par e-mail (optionnel)
     if args.send:
         print("\n📧 Envoi du rapport par e-mail...")
+        recipients = [email.strip() for email in RECIPIENT_EMAILS.split(',') if email.strip()]
+        print(f"   ├─ Destinataires: {len(recipients)}")
+        for email in recipients:
+            print(f"   │  • {email}")
+        
         if send_email(html):
-            print("✨ Rapport envoyé avec succès à", RECIPIENT_EMAIL)
+            print(f"   └─ ✅ Rapport envoyé avec succès à {len(recipients)} destinataire(s)")
         else:
-            print("⚠️ Échec de l'envoi du rapport")
+            print("   └─ ⚠️ Échec de l'envoi du rapport")
     
-    print("\n" + "=" * 70)
-    print("✅ ANALYSE TERMINÉE")
-    print("=" * 70)
+    print("\n" + "=" * 80)
+    print("✅ ANALYSE TERMINÉE AVEC SUCCÈS")
+    print("=" * 80)
+    print(f"📄 Fichier généré: {output_file}")
+    print(f"⏰ Durée: {(get_local_time() - generation_time).total_seconds():.1f} secondes")
+    print("=" * 80)
 
 if __name__ == "__main__":
     main()
-
