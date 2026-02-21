@@ -8,7 +8,7 @@ on:
     # Mi-journée EU / Pré-ouverture US (14h00 Paris = 13h00 UTC)
     - cron: '0 13 * * 1-5'     # 14:00 Paris - Avant ouverture US
     # Après clôture EU / Mi-journée US (18h00 Paris = 17h00 UTC)
-    - cron: '0 15 * * 1-5'     # 18:00 Paris - Synthèse de journée
+    - cron: '0 17 * * 1-5'     # 18:00 Paris - Synthèse de journée
   
   # Exécution manuelle via l'interface GitHub
   workflow_dispatch:
@@ -48,28 +48,108 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: 📦 Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install yfinance openai requests python-dateutil
+        env:
+          PIP_NO_CACHE_DIR: false
 
       # ==========================================
-      # 2. GÉNÉRATION DU RAPPORT
+      # 2. VÉRIFICATION DES FICHIERS
+      # ==========================================
+      - name: 🔍 Check script files
+        run: |
+          echo "📂 Contenu du répertoire :"
+          ls -la
+          
+          # Chercher le script Python
+          if [ -f "financial_report_final.py" ]; then
+            SCRIPT_NAME="financial_report_final.py"
+            echo "✅ Script trouvé : $SCRIPT_NAME"
+          elif [ -f "stock_report_full_ia_v2.py" ]; then
+            SCRIPT_NAME="stock_report_full_ia_v2.py"
+            echo "✅ Script trouvé : $SCRIPT_NAME"
+          elif [ -f "financial_report_improved.py" ]; then
+            SCRIPT_NAME="financial_report_improved.py"
+            echo "✅ Script trouvé : $SCRIPT_NAME"
+          else
+            echo "❌ Aucun script Python trouvé !"
+            echo "📂 Fichiers Python disponibles :"
+            find . -name "*.py" -type f
+            exit 1
+          fi
+          
+          # Sauvegarder le nom du script
+          echo "SCRIPT_NAME=$SCRIPT_NAME" >> $GITHUB_ENV
+          
+          # Vérifier la syntaxe Python
+          python -m py_compile "$SCRIPT_NAME"
+          echo "✅ Syntaxe Python valide"
+
+      - name: 🔐 Verify secrets
+        run: |
+          echo "🔐 Vérification des secrets..."
+          
+          MISSING_SECRETS=()
+          
+          if [ -z "${{ vars.OPENAI_API_KEY }}" ]; then
+            MISSING_SECRETS+=("OPENAI_API_KEY")
+          else
+            echo "✅ OPENAI_API_KEY configuré"
+          fi
+          
+          if [ -z "${{ vars.SENDER_EMAIL }}" ]; then
+            MISSING_SECRETS+=("SENDER_EMAIL")
+          else
+            echo "✅ SENDER_EMAIL configuré"
+          fi
+          
+          if [ -z "${{ vars.RECIPIENT_EMAILS }}" ]; then
+            MISSING_SECRETS+=("RECIPIENT_EMAILS")
+          else
+            echo "✅ RECIPIENT_EMAILS configuré"
+          fi
+          
+          if [ -z "${{ vars.EMAIL_PASSWORD }}" ]; then
+            MISSING_SECRETS+=("EMAIL_PASSWORD")
+          else
+            echo "✅ EMAIL_PASSWORD configuré"
+          fi
+          
+          if [ ${#MISSING_SECRETS[@]} -ne 0 ]; then
+            echo "❌ Secrets manquants : ${MISSING_SECRETS[*]}"
+            echo ""
+            echo "Pour configurer les secrets :"
+            echo "1. Allez dans Settings → Secrets → Actions"
+            echo "2. Cliquez sur 'New repository secret'"
+            echo "3. Créez les secrets manquants"
+            exit 1
+          fi
+          
+          echo "✅ Tous les secrets sont configurés"
+
+      # ==========================================
+      # 3. GÉNÉRATION DU RAPPORT
       # ==========================================
       - name: 🚀 Generate AI Stock Report
         id: generate_report
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-          RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          OPENAI_API_KEY: ${{ vars.OPENAI_API_KEY }}
+          SENDER_EMAIL: ${{ vars.SENDER_EMAIL }}
+          RECIPIENT_EMAILS: ${{ vars.RECIPIENT_EMAILS }}
+          EMAIL_PASSWORD: ${{ vars.EMAIL_PASSWORD }}
         run: |
+          echo "🚀 Démarrage de la génération du rapport..."
+          
           # Déterminer si on envoie l'email
           SEND_FLAG=""
           if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ inputs.send_email }}" == "true" ]]; then
             SEND_FLAG="--send"
+            echo "📧 Mode : Envoi par email activé"
+          else
+            echo "📝 Mode : Génération seule (pas d'envoi)"
           fi
           
           # Déterminer le nom du fichier
@@ -79,16 +159,28 @@ jobs:
             OUTPUT_FILE="rapport_boursier_$(date +%Y%m%d_%H%M).html"
           fi
           
-          # Exécuter le script
-          python financial_report_final.py --output "$OUTPUT_FILE" $SEND_FLAG
+          echo "📄 Nom du fichier : $OUTPUT_FILE"
           
-          # Sauvegarder le nom du fichier pour les étapes suivantes
+          # Exécuter le script
+          echo "⚙️ Exécution de $SCRIPT_NAME..."
+          python "$SCRIPT_NAME" --output "$OUTPUT_FILE" $SEND_FLAG
+          
+          # Vérifier que le fichier a été créé
+          if [ ! -f "$OUTPUT_FILE" ]; then
+            echo "❌ Le fichier $OUTPUT_FILE n'a pas été créé"
+            exit 1
+          fi
+          
+          FILE_SIZE=$(du -h "$OUTPUT_FILE" | cut -f1)
+          echo "✅ Rapport généré : $OUTPUT_FILE ($FILE_SIZE)"
+          
+          # Sauvegarder les informations pour les étapes suivantes
           echo "report_file=$OUTPUT_FILE" >> $GITHUB_OUTPUT
           echo "report_date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
           echo "report_time=$(date +%H:%M)" >> $GITHUB_OUTPUT
 
       # ==========================================
-      # 3. SAUVEGARDE DES ARTIFACTS
+      # 4. SAUVEGARDE DES ARTIFACTS
       # ==========================================
       - name: 📤 Upload report as artifact
         uses: actions/upload-artifact@v4
@@ -98,7 +190,7 @@ jobs:
           retention-days: 30
 
       # ==========================================
-      # 4. ARCHIVAGE DANS LE REPO (optionnel)
+      # 5. ARCHIVAGE DANS LE REPO (optionnel)
       # ==========================================
       - name: 📁 Archive report in repository
         if: github.event_name == 'schedule'
@@ -110,9 +202,18 @@ jobs:
           cp ${{ steps.generate_report.outputs.report_file }} \
              reports/$(date +%Y)/$(date +%m)/${{ steps.generate_report.outputs.report_file }}
           
+          echo "✅ Rapport archivé dans reports/$(date +%Y)/$(date +%m)/"
+          
           # Garder seulement les 10 derniers rapports (nettoyer les anciens)
           cd reports/$(date +%Y)/$(date +%m)
-          ls -t *.html | tail -n +11 | xargs -r rm --
+          TOTAL_FILES=$(ls -1 *.html 2>/dev/null | wc -l)
+          if [ $TOTAL_FILES -gt 10 ]; then
+            echo "🧹 Nettoyage : $TOTAL_FILES fichiers trouvés, conservation des 10 plus récents"
+            ls -t *.html | tail -n +11 | xargs -r rm --
+            echo "✅ Anciens rapports supprimés"
+          else
+            echo "ℹ️ $TOTAL_FILES rapports dans l'archive"
+          fi
 
       - name: 💾 Commit and push archived report
         if: github.event_name == 'schedule'
@@ -120,28 +221,61 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "GitHub Actions Bot"
           git add reports/
-          git diff --quiet && git diff --staged --quiet || \
-            (git commit -m "📊 Auto-archive: Rapport boursier du $(date +%Y-%m-%d) à $(date +%H:%M)" && git push)
+          
+          # Vérifier s'il y a des changements à committer
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "ℹ️ Aucun changement à committer"
+          else
+            git commit -m "📊 Auto-archive: Rapport boursier du $(date +%Y-%m-%d) à $(date +%H:%M)"
+            git push
+            echo "✅ Rapport archivé et poussé sur GitHub"
+          fi
 
       # ==========================================
-      # 5. NOTIFICATION DE SUCCÈS
+      # 6. NOTIFICATION DE SUCCÈS
       # ==========================================
       - name: ✅ Report generation summary
         if: success()
         run: |
-          echo "::notice::✅ Rapport généré avec succès!"
-          echo "::notice::📄 Fichier: ${{ steps.generate_report.outputs.report_file }}"
-          echo "::notice::📅 Date: ${{ steps.generate_report.outputs.report_date }} à ${{ steps.generate_report.outputs.report_time }}"
+          echo "=========================================="
+          echo "✅ RAPPORT GÉNÉRÉ AVEC SUCCÈS"
+          echo "=========================================="
+          echo "📄 Fichier    : ${{ steps.generate_report.outputs.report_file }}"
+          echo "📅 Date       : ${{ steps.generate_report.outputs.report_date }}"
+          echo "🕐 Heure      : ${{ steps.generate_report.outputs.report_time }}"
+          echo "📦 Artifact   : stock-report-${{ steps.generate_report.outputs.report_date }}"
+          
           if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ inputs.send_email }}" == "true" ]]; then
-            echo "::notice::📧 Email envoyé aux destinataires configurés"
+            echo "📧 Email      : Envoyé aux destinataires"
+          else
+            echo "📧 Email      : Non envoyé (mode génération seule)"
           fi
+          echo "=========================================="
 
       # ==========================================
-      # 6. GESTION DES ERREURS
+      # 7. GESTION DES ERREURS
       # ==========================================
       - name: ❌ Report generation failure
         if: failure()
         run: |
-          echo "::error::❌ Échec de la génération du rapport"
-          echo "::error::Vérifiez les secrets GitHub et les logs ci-dessus"
+          echo "=========================================="
+          echo "❌ ÉCHEC DE LA GÉNÉRATION DU RAPPORT"
+          echo "=========================================="
+          echo ""
+          echo "🔍 Points à vérifier :"
+          echo ""
+          echo "1. Secrets GitHub (Settings → Secrets → Actions) :"
+          echo "   - OPENAI_API_KEY"
+          echo "   - SENDER_EMAIL"
+          echo "   - RECIPIENT_EMAILS"
+          echo "   - EMAIL_PASSWORD"
+          echo ""
+          echo "2. Fichier Python présent dans le repository"
+          echo ""
+          echo "3. Clé OpenAI valide et avec crédit"
+          echo ""
+          echo "4. Configuration email Gmail correcte"
+          echo ""
+          echo "📚 Consultez README_GITHUB_ACTIONS.md section Dépannage"
+          echo "=========================================="
           exit 1
