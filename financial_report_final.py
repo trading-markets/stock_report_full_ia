@@ -663,13 +663,107 @@ def generate_html(summary, us_data, eu_data, benchmarks, market_context, recomme
         .footer strong {{ color: #374151; font-weight: 600; }}
         .footer-timestamp {{ margin-top: 10px; font-size: 10px; color: #6b7280; font-style: italic; }}
 
+        /* ===== TABLET ===== */
         @media (max-width: 768px) {{
-            .market-grid {{ grid-template-columns: 1fr; }}
-            .pulse-grid {{ flex-wrap: wrap; }}
-            table {{ font-size: 11px; }}
-            th, td {{ padding: 10px 8px; }}
-            .header h1 {{ font-size: 24px; }}
+            .container {{ border-radius: 0; }}
+            .header {{ padding: 30px 20px; }}
+            .header h1 {{ font-size: 22px; }}
+            .market-banner {{ padding: 20px; }}
+            .market-grid {{ grid-template-columns: 1fr 1fr; gap: 12px; }}
+            .pulse-section {{ padding: 16px 20px; }}
+            .pulse-grid {{ flex-wrap: wrap; gap: 10px; }}
+            .pulse-card {{ min-width: 100px; padding: 10px 12px; }}
             .content {{ padding: 20px; }}
+            .summary-box, .recommendations-section {{ padding: 16px; }}
+            .analysis-cell {{ max-width: 200px; }}
+        }}
+
+        /* ===== MOBILE — tables deviennent des cartes ===== */
+        @media (max-width: 520px) {{
+            body {{ padding: 0; }}
+            .container {{ border-radius: 0; box-shadow: none; }}
+            .header {{ padding: 24px 16px; }}
+            .header h1 {{ font-size: 18px; line-height: 1.3; }}
+            .header p {{ font-size: 13px; }}
+            .header-timestamp {{ font-size: 12px; padding: 6px 12px; }}
+
+            .pulse-section {{ padding: 14px 16px; }}
+            .pulse-grid {{ gap: 8px; }}
+            .pulse-card {{ min-width: calc(50% - 8px); flex: 1; }}
+            .pulse-price {{ font-size: 14px; }}
+
+            .market-banner {{ padding: 16px; }}
+            .market-grid {{ grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }}
+            .market-stat {{ padding: 10px 14px; }}
+            .market-stat-value {{ font-size: 18px; }}
+            .market-stat-label {{ font-size: 10px; }}
+
+            .content {{ padding: 14px; }}
+            .recommendations-section {{ padding: 14px; border-radius: 12px; }}
+            .recommendations-title {{ font-size: 16px; }}
+            .recommendation-card {{ padding: 14px; }}
+            .rec-title {{ font-size: 13px; }}
+            .rec-description {{ font-size: 12px; padding-left: 0; margin-top: 6px; }}
+            .rec-icon {{ font-size: 20px; }}
+
+            .summary-box {{ padding: 14px; border-radius: 12px; }}
+            .summary-box h2 {{ font-size: 15px; }}
+            .summary-box p {{ font-size: 13px; }}
+
+            .section-header {{ flex-direction: column; align-items: flex-start; gap: 8px; }}
+            .section-title {{ font-size: 17px; }}
+
+            /* Tables → cartes empilées */
+            table {{ box-shadow: none; margin-bottom: 20px; }}
+            table, tbody, tr {{ display: block; width: 100%; }}
+            thead {{ display: none; }}
+            tbody tr {{
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                margin-bottom: 12px;
+                padding: 14px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            }}
+            tbody tr:hover {{ transform: none; }}
+            tbody tr:nth-child(even) {{ background: white; }}
+            td {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 7px 0;
+                border-bottom: 1px solid #f3f4f6;
+                font-size: 13px;
+                max-width: 100%;
+            }}
+            td:last-child {{ border-bottom: none; padding-bottom: 0; }}
+            td::before {{
+                content: attr(data-label);
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                color: #9ca3af;
+                letter-spacing: 0.4px;
+                min-width: 90px;
+                flex-shrink: 0;
+            }}
+            /* Première cellule (actif) prend toute la largeur */
+            td:first-child {{
+                display: block;
+                border-bottom: 2px solid #e5e7eb;
+                padding-bottom: 10px;
+                margin-bottom: 4px;
+            }}
+            td:first-child::before {{ display: none; }}
+            .ticker {{ font-size: 16px; }}
+            .asset-name {{ font-size: 12px; }}
+            .price-cell {{ font-size: 15px; text-align: right; }}
+            .price-range {{ font-size: 11px; text-align: right; }}
+            .pos52w-bar {{ width: 60px; }}
+            .analysis-cell {{ max-width: none; text-align: right; font-size: 12px; flex-direction: column; align-items: flex-end; gap: 4px; }}
+            .badge {{ font-size: 10px; padding: 4px 10px; }}
+
+            .footer {{ padding: 20px 16px; font-size: 11px; }}
         }}
     </style>
     """
@@ -735,22 +829,24 @@ def generate_html(summary, us_data, eu_data, benchmarks, market_context, recomme
                         </div>
                     </div>
                 </td>
-                <td>
-                    <div class="price-cell">{item['price']:.2f} {item['currency']}</div>
-                    <div class="price-range">{item['day_low']:.2f} – {item['day_high']:.2f}</div>
-                    <div class="pos52w-bar"><div class="pos52w-fill" style="width:{pos52:.0f}%"></div></div>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">{item['price']:.2f} {item['currency']}</div>
+                        <div class="price-range">{item['day_low']:.2f} – {item['day_high']:.2f}</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:{pos52:.0f}%"></div></div>
+                    </div>
                 </td>
-                <td>
+                <td data-label="Variation">
                     <div class="momentum-row">
                         <div><span class="bias-indicator {bias_class}"></span><span class="{color}">{item['change_pct']:+.2f}%</span></div>
                         <div class="momentum-5d" style="color:{mom_color}">5j: {mom_sign}{mom5:.1f}%</div>
                         <span class="vol-badge {vol_class}">Vol. {vol_sig}</span>
                     </div>
                 </td>
-                <td><span class="badge {b_class}">{reco}</span></td>
-                <td class="analysis-cell">
-                    {item['ai']['analysis']}
-                    <span class="confidence-badge {conf_class}">{conf}</span>
+                <td data-label="Signal"><span class="badge {b_class}">{reco}</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>{item['ai']['analysis']}
+                    <span class="confidence-badge {conf_class}">{conf}</span></span>
                     {event_html}
                 </td>
             </tr>
@@ -773,7 +869,9 @@ def generate_html(summary, us_data, eu_data, benchmarks, market_context, recomme
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Rapport Boursier IA - {now_short}</title>
     {style}
 </head>

@@ -89,35 +89,41 @@ jobs:
           echo "✅ Syntaxe Python valide"
 
       - name: 🔐 Verify secrets
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          SENDER_EMAIL: ${{ vars.SENDER_EMAIL }}
+          RECIPIENT_EMAILS: ${{ vars.RECIPIENT_EMAILS }}
         run: |
           echo "🔐 Vérification des secrets..."
 
           MISSING_SECRETS=()
 
-          if [ -z "${{ vars.GROQ_API_KEY }}" ]; then
+          # Les secrets sont passés via env vars — jamais interpolés directement dans le shell
+          if [ -z "$GROQ_API_KEY" ]; then
             MISSING_SECRETS+=("GROQ_API_KEY")
           else
             echo "✅ GROQ_API_KEY configuré"
           fi
-          
-          if [ -z "${{ vars.SENDER_EMAIL }}" ]; then
+
+          if [ -z "$SENDER_EMAIL" ]; then
             MISSING_SECRETS+=("SENDER_EMAIL")
           else
             echo "✅ SENDER_EMAIL configuré"
           fi
-          
-          if [ -z "${{ vars.RECIPIENT_EMAILS }}" ]; then
+
+          if [ -z "$RECIPIENT_EMAILS" ]; then
             MISSING_SECRETS+=("RECIPIENT_EMAILS")
           else
             echo "✅ RECIPIENT_EMAILS configuré"
           fi
-          
-          if [ -z "${{ vars.EMAIL_PASSWORD }}" ]; then
+
+          if [ -z "$EMAIL_PASSWORD" ]; then
             MISSING_SECRETS+=("EMAIL_PASSWORD")
           else
             echo "✅ EMAIL_PASSWORD configuré"
           fi
-          
+
           if [ ${#MISSING_SECRETS[@]} -ne 0 ]; then
             echo "❌ Secrets manquants : ${MISSING_SECRETS[*]}"
             echo ""
@@ -127,7 +133,7 @@ jobs:
             echo "3. Créez les secrets manquants"
             exit 1
           fi
-          
+
           echo "✅ Tous les secrets sont configurés"
 
       # ==========================================
@@ -136,11 +142,11 @@ jobs:
       - name: 🚀 Generate AI Stock Report
         id: generate_report
         env:
-          GROQ_API_KEY: ${{ vars.GROQ_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           GROQ_MODEL: ${{ vars.GROQ_MODEL || 'llama-3.3-70b-versatile' }}
           SENDER_EMAIL: ${{ vars.SENDER_EMAIL }}
           RECIPIENT_EMAILS: ${{ vars.RECIPIENT_EMAILS }}
-          EMAIL_PASSWORD: ${{ vars.EMAIL_PASSWORD }}
         run: |
           echo "🚀 Démarrage de la génération du rapport..."
           
