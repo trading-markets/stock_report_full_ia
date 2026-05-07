@@ -1,6 +1,6 @@
 import json
 import yfinance as yf
-import anthropic
+from groq import Groq
 import smtplib
 import argparse
 import os
@@ -18,13 +18,13 @@ from email.mime.text import MIMEText
 # ==========================================
 # CONFIGURATION
 # ==========================================
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "votre@email.com")
 RECIPIENT_EMAILS = os.getenv("RECIPIENT_EMAILS", "destinataire1@email.com,destinataire2@email.com")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 TIMEZONE = "Europe/Paris"
 
@@ -49,34 +49,33 @@ def format_datetime(dt, format_str='%d/%m/%Y à %H:%M:%S'):
 
 
 def call_claude(prompt, system=None, model=None):
-    """Appel Claude API avec cache sur les system prompts pour réduire les coûts."""
-    if not ANTHROPIC_API_KEY:
+    """Appel Groq API (Llama) — gratuit, rapide."""
+    if not GROQ_API_KEY:
         return None
-    target_model = model or CLAUDE_MODEL
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    target_model = model or GROQ_MODEL
+    client = Groq(api_key=GROQ_API_KEY)
 
-    kwargs = {
-        "model": target_model,
-        "max_tokens": 1024,
-        "messages": [{"role": "user", "content": prompt}],
-    }
-
+    messages = []
     if system:
-        kwargs["system"] = [
-            {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}
-        ]
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
 
     try:
-        resp = client.messages.create(**kwargs)
-        return resp.content[0].text
+        resp = client.chat.completions.create(
+            model=target_model,
+            messages=messages,
+            max_tokens=1024,
+            temperature=0.7,
+        )
+        return resp.choices[0].message.content
     except Exception as e:
-        print(f"❌ Erreur Claude: {e}")
+        print(f"❌ Erreur Groq: {e}")
         return None
 
 
 def get_dynamic_assets_from_ai():
     """L'IA sélectionne les actifs les plus pertinents."""
-    print("🔍 Claude sélectionne les actifs les plus pertinents...")
+    print("🔍 Groq (Llama) sélectionne les actifs les plus pertinents...")
 
     system_prompt = (
         "Tu es un analyste financier senior spécialisé dans la sélection d'actifs boursiers. "
@@ -274,7 +273,7 @@ def get_benchmark_data():
 
 def get_market_context():
     """Récupère le contexte de marché via Claude."""
-    print("🌍 Analyse du contexte de marché par Claude...")
+    print("🌍 Analyse du contexte de marché par Groq (Llama)...")
 
     system_prompt = (
         "Tu es un analyste macro-économique qui suit l'actualité financière en temps réel. "
@@ -466,14 +465,14 @@ def validate_report(us_data, eu_data, benchmarks, generation_time):
         warnings.append(f"Benchmarks incomplets: {len(benchmarks)}/{len(BENCHMARK_TICKERS)}")
         print(f"   ⚠️  Benchmarks: {len(benchmarks)}/{len(BENCHMARK_TICKERS)} récupérés")
 
-    # 5. Vérification de la clé API Claude
+    # 5. Vérification de la clé API Groq
     checks_total += 1
-    if ANTHROPIC_API_KEY:
-        print(f"   ✅ Clé API Claude: configurée")
+    if GROQ_API_KEY:
+        print(f"   ✅ Clé API Groq: configurée")
         checks_passed += 1
     else:
-        errors.append("Clé API Claude manquante (ANTHROPIC_API_KEY)")
-        print(f"   ❌ Clé API Claude: NON configurée")
+        errors.append("Clé API Groq manquante (GROQ_API_KEY)")
+        print(f"   ❌ Clé API Groq: NON configurée")
 
     # Résumé
     print(f"\n   Score: {checks_passed}/{checks_total} contrôles réussis")
@@ -783,7 +782,7 @@ def generate_html(summary, us_data, eu_data, benchmarks, market_context, recomme
         <div class="header">
             <div class="header-content">
                 <h1>📊 Analyse Boursière Prédictive</h1>
-                <p>Rapport Stratégique Alimenté par Claude (Anthropic)</p>
+                <p>Rapport Stratégique Alimenté par Groq / Llama 3.3</p>
                 <div class="header-timestamp">🗓️ Généré le {now}</div>
             </div>
         </div>
@@ -866,7 +865,7 @@ def generate_html(summary, us_data, eu_data, benchmarks, market_context, recomme
 
         <div class="footer">
             <strong>Données temps réel</strong> via Yahoo Finance &bull;
-            <strong>Analyses générées par Claude</strong> ({CLAUDE_MODEL} — Anthropic)<br>
+            <strong>Analyses générées par Groq</strong> ({GROQ_MODEL} — Llama)<br>
             ⚠️ Ce document est fourni à titre informatif uniquement et ne constitue pas un conseil en investissement.<br>
             Les performances passées ne préjugent pas des performances futures. Investir comporte des risques.
             <div class="footer-timestamp">
@@ -918,8 +917,8 @@ Exemples:
   python financial_report_final.py --output rapport.html --send
 
 Variables d'environnement:
-  ANTHROPIC_API_KEY  : Clé API Claude (Anthropic)
-  CLAUDE_MODEL       : Modèle Claude (défaut: claude-haiku-4-5-20251001)
+  GROQ_API_KEY       : Clé API Groq (gratuit sur console.groq.com)
+  GROQ_MODEL         : Modèle Groq (défaut: llama-3.3-70b-versatile)
   SENDER_EMAIL       : Email expéditeur (Gmail)
   RECIPIENT_EMAILS   : Emails destinataires (séparés par virgules)
   EMAIL_PASSWORD     : Mot de passe d'application Gmail
@@ -941,12 +940,12 @@ Variables d'environnement:
     print("🚀 ANALYSE BOURSIÈRE IA — CLAUDE (ANTHROPIC)")
     print("=" * 80)
     print(f"📅 Date: {format_datetime(generation_time, '%A %d %B %Y à %H:%M:%S')}")
-    print(f"🤖 Modèle: {CLAUDE_MODEL}")
+    print(f"🤖 Modèle: {GROQ_MODEL} (Groq)")
     print(f"🌍 Fuseau: {TIMEZONE}")
     print("=" * 80)
 
-    if not ANTHROPIC_API_KEY:
-        print("⚠️  ATTENTION: ANTHROPIC_API_KEY non configurée — les analyses IA seront vides.")
+    if not GROQ_API_KEY:
+        print("⚠️  ATTENTION: GROQ_API_KEY non configurée — les analyses IA seront vides.")
 
     # 1. Contexte de marché
     market_context = get_market_context()
@@ -973,7 +972,7 @@ Variables d'environnement:
     print(f"   └─ {len(eu_raw)} actifs EU récupérés")
 
     # 5. Analyses IA
-    print("\n🧠 Génération des analyses Claude...")
+    print("\n🧠 Génération des analyses Groq (Llama)...")
     for i, item in enumerate(us_raw, 1):
         item["ai"] = get_ai_analysis(item, market_context)
         print(f"   ├─ [{i:02d}/{len(us_raw):02d}] {item['symbol']}: {item['ai']['recommendation']}")
