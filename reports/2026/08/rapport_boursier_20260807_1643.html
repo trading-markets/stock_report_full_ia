@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Rapport Boursier IA - 07/08/2026 à 18:43</title>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1f2937;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: #ffffff;
+            padding: 50px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute; top: -50%; right: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+        .header-content { position: relative; z-index: 1; }
+        .header h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header p { opacity: 0.95; font-size: 15px; font-weight: 300; }
+        .header-timestamp {
+            display: inline-block; background: rgba(255,255,255,0.15);
+            padding: 8px 16px; border-radius: 8px; font-size: 13px;
+            margin-top: 10px; font-weight: 500;
+        }
+        .market-banner {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            padding: 30px 40px;
+            border-bottom: 3px solid #8b5cf6;
+        }
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px; margin-bottom: 20px;
+        }
+        .market-stat {
+            background: white; padding: 15px 20px; border-radius: 12px;
+            border-left: 4px solid #8b5cf6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .market-stat-label { font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .market-stat-value { font-size: 24px; font-weight: 700; color: #8b5cf6; }
+        .events-box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .event-item { padding: 8px 0; border-left: 3px solid #3b82f6; padding-left: 12px; margin-bottom: 8px; font-size: 13px; color: #374151; }
+
+        /* Market Pulse */
+        .pulse-section {
+            background: #0f172a; padding: 20px 40px; overflow-x: auto;
+        }
+        .pulse-title { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .pulse-grid { display: flex; gap: 20px; }
+        .pulse-card {
+            background: #1e293b; border-radius: 10px; padding: 12px 18px;
+            min-width: 140px; border: 1px solid #334155;
+        }
+        .pulse-name { color: #94a3b8; font-size: 11px; margin-bottom: 4px; }
+        .pulse-price { color: #f1f5f9; font-weight: 700; font-size: 16px; font-family: monospace; }
+        .pulse-change { font-size: 13px; font-weight: 700; margin-top: 2px; }
+
+        .content { padding: 40px; }
+        .recommendations-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-radius: 16px; padding: 30px; margin-bottom: 40px;
+            border: 2px solid #fbbf24;
+        }
+        .recommendations-title { font-size: 20px; font-weight: 700; color: #92400e; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .recommendation-card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 5px solid #f59e0b; }
+        .recommendation-card:last-child { margin-bottom: 0; }
+        .rec-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .rec-icon { font-size: 24px; }
+        .rec-title { font-size: 15px; font-weight: 700; color: #1f2937; }
+        .rec-description { font-size: 13px; color: #4b5563; line-height: 1.6; padding-left: 36px; }
+
+        .summary-box { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 16px; padding: 25px; margin-bottom: 40px; border: 2px solid #3b82f6; }
+        .summary-box h2 { font-size: 18px; color: #1e3a8a; margin-bottom: 15px; font-weight: 700; }
+        .summary-box p { color: #1e40af; line-height: 1.8; font-size: 14px; }
+
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 3px solid #e5e7eb; }
+        .section-title { font-size: 22px; font-weight: 700; color: #1f2937; display: flex; align-items: center; gap: 10px; }
+        .section-count { background: #3b82f6; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 45px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        thead { background: linear-gradient(135deg, #1f2937 0%, #374151 100%); }
+        th { text-align: left; padding: 16px 14px; color: #f9fafb; font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px; }
+        tbody tr { background: white; transition: all 0.2s ease; }
+        tbody tr:hover { background: #f9fafb; }
+        tbody tr:nth-child(even) { background: #fafbfc; }
+        td { padding: 18px 14px; border-bottom: 1px solid #e5e7eb; font-size: 13px; vertical-align: middle; }
+
+        .asset-info { display: flex; flex-direction: column; gap: 4px; }
+        .ticker { font-weight: 800; color: #1f2937; font-size: 15px; font-family: 'Courier New', monospace; }
+        .asset-name { font-size: 11px; color: #6b7280; font-weight: 500; }
+        .update-time { font-size: 10px; color: #9ca3af; display: flex; align-items: center; gap: 4px; }
+        .market-status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; margin-left: 4px; }
+        .status-open { background: #d1fae5; color: #065f46; }
+        .status-closed { background: #fee2e2; color: #991b1b; }
+        .time-ago { color: #6b7280; font-weight: 600; }
+
+        .price-cell { font-family: 'Courier New', monospace; font-weight: 700; font-size: 15px; color: #1f2937; }
+        .price-range { font-size: 10px; color: #9ca3af; margin-top: 3px; }
+
+        .pos { color: #10b981; font-weight: 700; }
+        .neg { color: #ef4444; font-weight: 700; }
+        .neutral { color: #6b7280; font-weight: 700; }
+
+        .momentum-row { display: flex; flex-direction: column; gap: 3px; }
+        .momentum-5d { font-size: 11px; color: #6b7280; }
+
+        .vol-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-top: 3px; }
+        .vol-fort { background: #fef3c7; color: #92400e; }
+        .vol-normal { background: #f3f4f6; color: #6b7280; }
+        .vol-faible { background: #ede9fe; color: #5b21b6; }
+
+        .pos52w-bar { width: 80px; height: 6px; background: #e5e7eb; border-radius: 3px; margin-top: 4px; position: relative; overflow: hidden; }
+        .pos52w-fill { height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981); border-radius: 3px; }
+
+        .badge { padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; letter-spacing: 0.5px; }
+        .badge-buy { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .badge-sell { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+        .badge-hold { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+        .badge-watch { background: #e5e7eb; color: #374151; border: 1px solid #6b7280; }
+
+        .analysis-cell { line-height: 1.6; max-width: 350px; }
+        .confidence-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 600; margin-left: 6px; text-transform: uppercase; }
+        .conf-haute { background: #d1fae5; color: #065f46; }
+        .conf-moyenne { background: #fef3c7; color: #92400e; }
+        .conf-faible { background: #fee2e2; color: #991b1b; }
+
+        .event-text { color: #dc2626; font-size: 11px; font-weight: 600; margin-top: 8px; display: block; padding: 6px 10px; background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 4px; }
+
+        .bias-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .bias-haussier { background: #10b981; }
+        .bias-baissier { background: #ef4444; }
+        .bias-neutre { background: #6b7280; }
+
+        .footer { text-align: center; padding: 30px; font-size: 11px; color: #9ca3af; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); border-top: 2px solid #e5e7eb; }
+        .footer strong { color: #374151; font-weight: 600; }
+        .footer-timestamp { margin-top: 10px; font-size: 10px; color: #6b7280; font-style: italic; }
+
+        /* ===== TABLET ===== */
+        @media (max-width: 768px) {
+            .container { border-radius: 0; }
+            .header { padding: 30px 20px; }
+            .header h1 { font-size: 22px; }
+            .market-banner { padding: 20px; }
+            .market-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+            .pulse-section { padding: 16px 20px; }
+            .pulse-grid { flex-wrap: wrap; gap: 10px; }
+            .pulse-card { min-width: 100px; padding: 10px 12px; }
+            .content { padding: 20px; }
+            .summary-box, .recommendations-section { padding: 16px; }
+            .analysis-cell { max-width: 200px; }
+        }
+
+        /* ===== MOBILE — tables deviennent des cartes ===== */
+        @media (max-width: 520px) {
+            body { padding: 0; }
+            .container { border-radius: 0; box-shadow: none; }
+            .header { padding: 24px 16px; }
+            .header h1 { font-size: 18px; line-height: 1.3; }
+            .header p { font-size: 13px; }
+            .header-timestamp { font-size: 12px; padding: 6px 12px; }
+
+            .pulse-section { padding: 14px 16px; }
+            .pulse-grid { gap: 8px; }
+            .pulse-card { min-width: calc(50% - 8px); flex: 1; }
+            .pulse-price { font-size: 14px; }
+
+            .market-banner { padding: 16px; }
+            .market-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+            .market-stat { padding: 10px 14px; }
+            .market-stat-value { font-size: 18px; }
+            .market-stat-label { font-size: 10px; }
+
+            .content { padding: 14px; }
+            .recommendations-section { padding: 14px; border-radius: 12px; }
+            .recommendations-title { font-size: 16px; }
+            .recommendation-card { padding: 14px; }
+            .rec-title { font-size: 13px; }
+            .rec-description { font-size: 12px; padding-left: 0; margin-top: 6px; }
+            .rec-icon { font-size: 20px; }
+
+            .summary-box { padding: 14px; border-radius: 12px; }
+            .summary-box h2 { font-size: 15px; }
+            .summary-box p { font-size: 13px; }
+
+            .section-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .section-title { font-size: 17px; }
+
+            /* Tables → cartes empilées */
+            table { box-shadow: none; margin-bottom: 20px; }
+            table, tbody, tr { display: block; width: 100%; }
+            thead { display: none; }
+            tbody tr {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                margin-bottom: 12px;
+                padding: 14px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            }
+            tbody tr:hover { transform: none; }
+            tbody tr:nth-child(even) { background: white; }
+            td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 7px 0;
+                border-bottom: 1px solid #f3f4f6;
+                font-size: 13px;
+                max-width: 100%;
+            }
+            td:last-child { border-bottom: none; padding-bottom: 0; }
+            td::before {
+                content: attr(data-label);
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                color: #9ca3af;
+                letter-spacing: 0.4px;
+                min-width: 90px;
+                flex-shrink: 0;
+            }
+            /* Première cellule (actif) prend toute la largeur */
+            td:first-child {
+                display: block;
+                border-bottom: 2px solid #e5e7eb;
+                padding-bottom: 10px;
+                margin-bottom: 4px;
+            }
+            td:first-child::before { display: none; }
+            .ticker { font-size: 16px; }
+            .asset-name { font-size: 12px; }
+            .price-cell { font-size: 15px; text-align: right; }
+            .price-range { font-size: 11px; text-align: right; }
+            .pos52w-bar { width: 60px; }
+            .analysis-cell { max-width: none; text-align: right; font-size: 12px; flex-direction: column; align-items: flex-end; gap: 4px; }
+            .badge { font-size: 10px; padding: 4px 10px; }
+
+            .footer { padding: 20px 16px; font-size: 11px; }
+        }
+    </style>
+    
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>📊 Analyse Boursière Prédictive</h1>
+                <p>Rapport Stratégique Alimenté par Groq / Llama 3.3</p>
+                <div class="header-timestamp">🗓️ Généré le 07/08/2026 à 18:43:34</div>
+            </div>
+        </div>
+
+        <div class="pulse-section">
+            <div class="pulse-title">📡 Market Pulse — Indices de Référence</div>
+            <div class="pulse-grid">
+            <div class="pulse-card">
+                <div class="pulse-name">S&P 500</div>
+                <div class="pulse-price">7748.25</div>
+                <div class="pulse-change" style="color:#10b981">+0.50%</div>
+            </div>
+            <div class="pulse-card">
+                <div class="pulse-name">NASDAQ</div>
+                <div class="pulse-price">26614.17</div>
+                <div class="pulse-change" style="color:#10b981">+1.01%</div>
+            </div>
+            <div class="pulse-card">
+                <div class="pulse-name">CAC 40</div>
+                <div class="pulse-price">8714.93</div>
+                <div class="pulse-change" style="color:#10b981">+0.17%</div>
+            </div>
+            <div class="pulse-card">
+                <div class="pulse-name">DAX</div>
+                <div class="pulse-price">26319.45</div>
+                <div class="pulse-change" style="color:#10b981">+0.69%</div>
+            </div>
+            <div class="pulse-card">
+                <div class="pulse-name">VIX</div>
+                <div class="pulse-price">15.09</div>
+                <div class="pulse-change" style="color:#ef4444">-0.40%</div>
+            </div></div>
+        </div>
+
+        <div class="market-banner">
+            <div class="market-grid">
+                <div class="market-stat">
+                    <div class="market-stat-label">Sentiment de Marché</div>
+                    <div class="market-stat-value">Mixte</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-label">Niveau de Risque</div>
+                    <div class="market-stat-value">Modéré</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-label">Actifs en Hausse</div>
+                    <div class="market-stat-value">13/20</div>
+                </div>
+                <div class="market-stat">
+                    <div class="market-stat-label">Variation Moyenne</div>
+                    <div class="market-stat-value">+0.65%</div>
+                </div>
+            </div>
+            <div class="events-box">
+                <div class="market-stat-label" style="margin-bottom: 12px;">ÉVÉNEMENTS DU JOUR</div>
+                <div class="event-item">📌 Données macro-économiques attendues</div><div class="event-item">📌 Tension géopolitique persistante</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="recommendations-section">
+                <div class="recommendations-title">💡 Recommandations Stratégiques du Jour</div>
+                <div class="recommendation-card">
+            <div class="rec-header"><span class="rec-icon">🎯</span><span class="rec-title">Diversification sectorielle</span></div>
+            <div class="rec-description">Répartir les positions entre tech, finance et matières premières.</div>
+        </div><div class="recommendation-card">
+            <div class="rec-header"><span class="rec-icon">📊</span><span class="rec-title">Surveillance des volumes</span></div>
+            <div class="rec-description">Observer les volumes de trading pour confirmer les tendances.</div>
+        </div><div class="recommendation-card">
+            <div class="rec-header"><span class="rec-icon">🛡️</span><span class="rec-title">Gestion du risque</span></div>
+            <div class="rec-description">Maintenir des stop-loss sur les positions volatiles.</div>
+        </div>
+            </div>
+
+            <div class="summary-box">
+                <h2>📝 Synthèse du Marché</h2>
+                <p>Marchés en évolution avec des opportunités sectorielles. Surveillance recommandée sur les valeurs technologiques et les ETFs diversifiés.</p>
+            </div>
+
+            <div class="section-header">
+                <div class="section-title">🇺🇸 Marchés US & ETFs</div>
+                <div class="section-count">12 actifs</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Actif</th>
+                        <th>Prix / Plage 52s</th>
+                        <th>Var. / Momentum</th>
+                        <th>Recommandation</th>
+                        <th>Analyse Claude</th>
+                    </tr>
+                </thead>
+                <tbody>
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">AAPL</span>
+                        <span class="asset-name">Apple Inc.</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">312.13 USD</div>
+                        <div class="price-range">310.74 – 314.81</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="neg">-0.09%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +2.9%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">MSFT</span>
+                        <span class="asset-name">Microsoft Corporation</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">502.51 USD</div>
+                        <div class="price-range">499.12 – 505.18</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+0.53%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +3.0%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">NVDA</span>
+                        <span class="asset-name">NVIDIA Corporation</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">222.41 USD</div>
+                        <div class="price-range">220.66 – 224.76</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+1.56%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +7.6%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">TSLA</span>
+                        <span class="asset-name">Tesla Inc.</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">328.61 USD</div>
+                        <div class="price-range">321.25 – 333.73</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+2.84%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +2.0%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">AMZN</span>
+                        <span class="asset-name">Amazon.com Inc.</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">275.83 USD</div>
+                        <div class="price-range">272.75 – 278.31</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+1.31%</span></div>
+                        <div class="momentum-5d" style="color:#ef4444">5j: -2.9%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">META</span>
+                        <span class="asset-name">Meta Platforms Inc.</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">593.60 USD</div>
+                        <div class="price-range">585.62 – 598.74</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+0.63%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +0.6%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">GOOGL</span>
+                        <span class="asset-name">Alphabet Inc.</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">355.39 USD</div>
+                        <div class="price-range">353.78 – 358.90</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="neg">-0.66%</span></div>
+                        <div class="momentum-5d" style="color:#ef4444">5j: -4.9%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">AMD</span>
+                        <span class="asset-name">Advanced Micro Devices</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">479.94 USD</div>
+                        <div class="price-range">476.06 – 498.82</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="neg">-1.91%</span></div>
+                        <div class="momentum-5d" style="color:#ef4444">5j: -1.0%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">SPY</span>
+                        <span class="asset-name">S&P 500 ETF Trust</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">772.45 USD</div>
+                        <div class="price-range">769.61 – 773.91</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+0.51%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +2.0%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">QQQ</span>
+                        <span class="asset-name">Nasdaq-100 ETF</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">720.78 USD</div>
+                        <div class="price-range">716.52 – 723.50</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+0.86%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +3.0%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">SMH</span>
+                        <span class="asset-name">VanEck Semiconductor ETF</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">579.47 USD</div>
+                        <div class="price-range">572.33 – 586.09</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+1.40%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +6.2%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">VWO</span>
+                        <span class="asset-name">Vanguard Emerging Markets ETF</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-open">Ouvert</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">60.40 USD</div>
+                        <div class="price-range">60.15 – 60.53</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+0.73%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +2.3%</div>
+                        <span class="vol-badge vol-faible">Vol. Faible</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            </tbody>
+            </table>
+
+            <div class="section-header">
+                <div class="section-title">🇪🇺 Marchés Européens</div>
+                <div class="section-count">8 actifs</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Actif</th>
+                        <th>Prix / Plage 52s</th>
+                        <th>Var. / Momentum</th>
+                        <th>Recommandation</th>
+                        <th>Analyse Claude</th>
+                    </tr>
+                </thead>
+                <tbody>
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">SAP.DE</span>
+                        <span class="asset-name">SAP SE</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-closed">Fermé</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">177.96 EUR</div>
+                        <div class="price-range">173.82 – 179.56</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+4.08%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +8.1%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">ASML.AS</span>
+                        <span class="asset-name">ASML Holding NV</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-closed">Fermé</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">1499.00 EUR</div>
+                        <div class="price-range">1482.00 – 1529.00</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+0.33%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +5.6%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">MC.PA</span>
+                        <span class="asset-name">LVMH Moët Hennessy</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-closed">Fermé</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">480.00 EUR</div>
+                        <div class="price-range">478.15 – 483.70</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="neg">-0.30%</span></div>
+                        <div class="momentum-5d" style="color:#ef4444">5j: -1.4%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">OR.PA</span>
+                        <span class="asset-name">L'Oréal SA</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-closed">Fermé</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">385.90 EUR</div>
+                        <div class="price-range">385.90 – 393.25</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="neg">-1.15%</span></div>
+                        <div class="momentum-5d" style="color:#ef4444">5j: -1.0%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">SIE.DE</span>
+                        <span class="asset-name">Siemens AG</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-closed">Fermé</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">279.80 EUR</div>
+                        <div class="price-range">273.85 – 282.15</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+2.45%</span></div>
+                        <div class="momentum-5d" style="color:#ef4444">5j: -1.9%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">AIR.PA</span>
+                        <span class="asset-name">Airbus SE</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-closed">Fermé</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">213.60 EUR</div>
+                        <div class="price-range">212.85 – 216.20</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="pos">+0.54%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +2.7%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">TTE.PA</span>
+                        <span class="asset-name">TotalEnergies SE</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-closed">Fermé</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">74.09 EUR</div>
+                        <div class="price-range">73.77 – 75.40</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="neg">-0.60%</span></div>
+                        <div class="momentum-5d" style="color:#ef4444">5j: -3.1%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            
+            <tr>
+                <td>
+                    <div class="asset-info">
+                        <span class="ticker">SAN.MC</span>
+                        <span class="asset-name">Banco Santander SA</span>
+                        <div class="update-time">
+                            🕐 <span class="time-ago">il y a 16h</span>
+                            <span class="market-status-badge status-closed">Fermé</span>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Prix">
+                    <div>
+                        <div class="price-cell">12.86 EUR</div>
+                        <div class="price-range">12.72 – 12.99</div>
+                        <div class="pos52w-bar"><div class="pos52w-fill" style="width:50%"></div></div>
+                    </div>
+                </td>
+                <td data-label="Variation">
+                    <div class="momentum-row">
+                        <div><span class="bias-indicator bias-neutre"></span><span class="neg">-0.05%</span></div>
+                        <div class="momentum-5d" style="color:#10b981">5j: +2.3%</div>
+                        <span class="vol-badge vol-normal">Vol. Normal</span>
+                    </div>
+                </td>
+                <td data-label="Signal"><span class="badge badge-hold">🟡 Maintenir</span></td>
+                <td data-label="Analyse" class="analysis-cell">
+                    <span>Analyse indisponible
+                    <span class="confidence-badge conf-faible">Faible</span></span>
+                    
+                </td>
+            </tr>
+            </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <strong>Données temps réel</strong> via Yahoo Finance &bull;
+            <strong>Analyses générées par Groq</strong> (llama-3.3-70b-versatile — Llama)<br>
+            ⚠️ Ce document est fourni à titre informatif uniquement et ne constitue pas un conseil en investissement.<br>
+            Les performances passées ne préjugent pas des performances futures. Investir comporte des risques.
+            <div class="footer-timestamp">
+                Rapport généré le 07/08/2026 à 18:43:34 &bull; Fuseau horaire: Europe/Paris
+            </div>
+        </div>
+    </div>
+</body>
+</html>
